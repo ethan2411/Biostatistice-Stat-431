@@ -1,0 +1,257 @@
+---
+title: "Biostats A3"
+author: "Ethan Scott"
+date: "2023-03-26"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading the Data
+
+```{r}
+# Load required R packages
+library(glmnet)
+library(magrittr)
+
+# Read data from a CSV file
+data = read.csv("C:\\Users\\ethan\\Downloads\\Stat 431\\Assignment #3\\data.csv")
+head(data)
+```
+
+## Ridge
+
+```{r}
+# Set a random seed for reproducibility
+set.seed(1)
+
+# Split data into training and testing sets
+n <- nrow(data)
+training.samples <- sample(seq_len(n), size = floor(0.75 * n))
+train.data <- data[training.samples, ]
+test.data <- data[-training.samples, ]
+
+# Prepare training data by converting categorical variables to numeric using one-hot encoding
+# and separate the outcome variable from the features
+x <- model.matrix(Outcome~., train.data)[,-1]
+y <- train.data$Outcome
+
+# Perform cross-validation using L2 regularization and the binomial family for logistic regression
+cv.ridge <- cv.glmnet(x, y, alpha = 0, family = "binomial")
+
+# Fit a regularized logistic regression model using the lambda value that gives the smallest cross-validation error
+model <- glmnet(x, y, alpha =0, family = "binomial", lambda = cv.ridge$lambda.min)
+
+# Prepare testing data and compute predicted probabilities of the outcome using the trained model
+x.test <- model.matrix(Outcome ~., test.data)[,-1]
+probabilities <- model %>% predict(newx = x.test)
+
+# Assign predicted outcome based on a threshold of 0.5
+predicted.Outcome <- ifelse(probabilities >= 0.5, 1, 0)
+
+# Print the coefficients of the model
+coef(model)
+
+# Plot the cross-validation errors for different values of lambda
+plot(cv.ridge)
+
+# Print the value of lambda that gives the smallest cross-validation error
+cv.ridge$lambda.min
+
+# Create a confusion matrix
+confusion_mat <- table(predicted.Outcome, test.data$Outcome)
+print("Confusion Matrix:")
+print(confusion_mat)
+
+# Calculate classification statistics
+accuracy <- sum(diag(confusion_mat)) / sum(confusion_mat)
+recall <- confusion_mat[2,2] / sum(confusion_mat[2,])
+precision <- confusion_mat[2,2] / sum(confusion_mat[,2])
+f1_score <- 2 * (precision * recall) / (precision + recall)
+
+# Print the summary statistics
+print(paste0("Classification accuracy: ", round(accuracy, 3)))
+print(paste0("Recall: ", round(recall, 3)))
+print(paste0("Precision: ", round(precision, 3)))
+print(paste0("F1 score: ", round(f1_score, 3)))
+```
+
+## LASSO
+
+```{r}
+# Set a random seed for reproducibility
+set.seed(1)
+# Perform cross-validation using L1 regularization and the binomial family for logistic regression
+cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
+
+# Fit a regularized logistic regression model using the lambda value that gives the smallest cross-validation error
+model <- glmnet(x, y, alpha =1, family = "binomial", lambda = cv.lasso$lambda.min)
+
+# Prepare testing data and compute predicted probabilities of the outcome using the trained model
+x.test <- model.matrix(Outcome ~., test.data)[,-1]
+probabilities <- model %>% predict(newx = x.test)
+
+# Assign predicted outcome based on a threshold of 0.5
+predicted.Outcome <- ifelse(probabilities >= 0.5, 1, 0)
+
+# Print the coefficients of the model
+coef(model)
+
+# Plot the cross-validation errors for different values of lambda
+plot(cv.lasso)
+
+# Print the value of lambda that gives the smallest cross-validation error
+cv.lasso$lambda.min
+
+# Create a confusion matrix
+confusion_mat <- table(predicted.Outcome, test.data$Outcome)
+print("Confusion Matrix:")
+print(confusion_mat)
+
+# Calculate classification statistics
+accuracy <- sum(diag(confusion_mat)) / sum(confusion_mat)
+recall <- confusion_mat[2,2] / sum(confusion_mat[2,])
+precision <- confusion_mat[2,2] / sum(confusion_mat[,2])
+f1_score <- 2 * (precision * recall) / (precision + recall)
+
+# Print the summary statistics
+print(paste0("Classification accuracy: ", round(accuracy, 3)))
+print(paste0("Recall: ", round(recall, 3)))
+print(paste0("Precision: ", round(precision, 3)))
+print(paste0("F1 score: ", round(f1_score, 3)))
+```
+
+## Elastic Net
+
+```{r}
+# Set a random seed for reproducibility
+set.seed(1)
+# Perform cross-validation using L1 and L2 regularization and the binomial family for logistic regression
+cv.elnet <- cv.glmnet(x, y, alpha = 0.5, family = "binomial")
+
+# Fit an elastic net logistic regression model using the lambda value that gives the smallest cross-validation error
+model <- glmnet(x, y, alpha = 0.5, family = "binomial", lambda = cv.elnet$lambda.min)
+# Prepare testing data and compute predicted probabilities of the outcome using the trained model
+x.test <- model.matrix(Outcome ~., test.data)[,-1]
+probabilities <- model %>% predict(newx = x.test)
+
+# Assign predicted outcome based on a threshold of 0.5
+predicted.Outcome <- ifelse(probabilities >= 0.5, 1, 0)
+
+# Print the coefficients of the model
+coef(model)
+
+# Plot the cross-validation errors for different values of lambda
+plot(cv.elnet)
+
+# Print the value of lambda that gives the smallest cross-validation error
+cv.elnet$lambda.min
+
+# Create a confusion matrix
+confusion_mat <- table(predicted.Outcome, test.data$Outcome)
+print("Confusion Matrix:")
+print(confusion_mat)
+
+# Calculate classification statistics
+accuracy <- sum(diag(confusion_mat)) / sum(confusion_mat)
+recall <- confusion_mat[2,2] / sum(confusion_mat[2,])
+precision <- confusion_mat[2,2] / sum(confusion_mat[,2])
+f1_score <- 2 * (precision * recall) / (precision + recall)
+
+# Print the summary statistics
+print(paste0("Classification accuracy: ", round(accuracy, 3)))
+print(paste0("Recall: ", round(recall, 3)))
+print(paste0("Precision: ", round(precision, 3)))
+print(paste0("F1 score: ", round(f1_score, 3)))
+```
+
+#### Same as above but changing alpha to 0.3 and 0.7 to see changed
+
+```{r}
+# Set a random seed for reproducibility
+set.seed(1)
+#alpha =0.3
+# Perform cross-validation using L1 and L2 regularization and the binomial family for logistic regression
+cv.elnet <- cv.glmnet(x, y, alpha = 0.3, family = "binomial")
+
+# Fit an elastic net logistic regression model using the lambda value that gives the smallest cross-validation error
+model <- glmnet(x, y, alpha = 0.3, family = "binomial", lambda = cv.elnet$lambda.min)
+
+# Prepare testing data and compute predicted probabilities of the outcome using the trained model
+x.test <- model.matrix(Outcome ~., test.data)[,-1]
+probabilities <- model %>% predict(newx = x.test)
+
+# Assign predicted outcome based on a threshold of 0.5
+predicted.Outcome <- ifelse(probabilities >= 0.5, 1, 0)
+
+# Print the coefficients of the model
+coef(model)
+
+# Plot the cross-validation errors for different values of lambda
+plot(cv.elnet)
+
+# Print the value of lambda that gives the smallest cross-validation error
+cv.elnet$lambda.min
+
+# Create a confusion matrix
+confusion_mat <- table(predicted.Outcome, test.data$Outcome)
+print("Confusion Matrix:")
+print(confusion_mat)
+
+# Calculate classification statistics
+accuracy <- sum(diag(confusion_mat)) / sum(confusion_mat)
+recall <- confusion_mat[2,2] / sum(confusion_mat[2,])
+precision <- confusion_mat[2,2] / sum(confusion_mat[,2])
+f1_score <- 2 * (precision * recall) / (precision + recall)
+
+# Print the summary statistics
+print(paste0("Classification accuracy: ", round(accuracy, 3)))
+print(paste0("Recall: ", round(recall, 3)))
+print(paste0("Precision: ", round(precision, 3)))
+print(paste0("F1 score: ", round(f1_score, 3)))
+
+############################################################################
+#With alpha 0.7
+# Perform cross-validation using L1 and L2 regularization and the binomial family for logistic regression
+cv.elnet <- cv.glmnet(x, y, alpha = 0.7, family = "binomial")
+
+# Fit an elastic net logistic regression model using the lambda value that gives the smallest cross-validation error
+model <- glmnet(x, y, alpha = 0.7, family = "binomial", lambda = cv.elnet$lambda.min)
+
+# Prepare testing data and compute predicted probabilities of the outcome using the trained model
+x.test <- model.matrix(Outcome ~., test.data)[,-1]
+probabilities <- model %>% predict(newx = x.test)
+
+# Assign predicted outcome based on a threshold of 0.5
+predicted.Outcome <- ifelse(probabilities >= 0.5, 1, 0)
+
+# Print the coefficients of the model
+coef(model)
+
+# Plot the cross-validation errors for different values of lambda
+plot(cv.elnet)
+
+# Print the value of lambda that gives the smallest cross-validation error
+cv.elnet$lambda.min
+
+# Create a confusion matrix
+confusion_mat <- table(predicted.Outcome, test.data$Outcome)
+print("Confusion Matrix:")
+print(confusion_mat)
+
+# Calculate classification statistics
+accuracy <- sum(diag(confusion_mat)) / sum(confusion_mat)
+recall <- confusion_mat[2,2] / sum(confusion_mat[2,])
+precision <- confusion_mat[2,2] / sum(confusion_mat[,2])
+f1_score <- 2 * (precision * recall) / (precision + recall)
+
+# Print the summary statistics
+print(paste0("Classification accuracy: ", round(accuracy, 3)))
+print(paste0("Recall: ", round(recall, 3)))
+print(paste0("Precision: ", round(precision, 3)))
+print(paste0("F1 score: ", round(f1_score, 3)))
+```
